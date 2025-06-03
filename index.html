@@ -76,6 +76,14 @@
             background-color: #7c3aed;
             transform: translateY(-2px);
         }
+        .btn-edit {
+            background-color: #3b82f6; /* Blue for edit */
+            color: white;
+        }
+        .btn-edit:hover {
+            background-color: #2563eb;
+            transform: translateY(-2px);
+        }
         .input-field {
             width: 100%;
             padding: 10px 15px;
@@ -252,12 +260,20 @@
                 <label for="manualEndTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">End Time:</label>
                 <input type="datetime-local" id="manualEndTimeInput" class="input-field mb-4">
 
-                <button id="addManualEntryButton" class="btn btn-primary w-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                        <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
-                    </svg>
-                    Add Manual Entry
-                </button>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="addManualEntryButton" class="btn btn-primary flex-1">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                        </svg>
+                        Add Manual Entry
+                    </button>
+                    <button id="cancelEditButton" class="btn btn-secondary flex-1 hidden">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                            <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                        </svg>
+                        Cancel Edit
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -290,9 +306,6 @@
 
     <script>
         // Service Worker Registration
-        // This registration will work when hosted on HTTPS (like GitHub Pages).
-        // The error "The URL protocol of the script (':') is not supported" typically occurs
-        // when running from a local 'blob:' URL (e.g., in a development preview iframe).
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js')
@@ -323,6 +336,7 @@
         const manualStartTimeInput = document.getElementById('manualStartTimeInput');
         const manualEndTimeInput = document.getElementById('manualEndTimeInput');
         const addManualEntryButton = document.getElementById('addManualEntryButton');
+        const cancelEditButton = document.getElementById('cancelEditButton'); // New button
 
         // DOM Elements - General
         const entriesList = document.getElementById('entriesList');
@@ -336,7 +350,6 @@
         const modalOkButton = document.getElementById('modalOkButton');
         const modalCancelButton = document.getElementById('modalCancelButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
-        // Ensure modalButtons is robustly accessed
         const getModalButtons = () => document.getElementById('modalButtons'); 
 
 
@@ -350,13 +363,18 @@
             availableJobs: [],
             activeJobName: null,
             activeJobStartTime: null,
-            entries: []
+            entries: [] // Each entry will now have a unique ID
         };
         let activeTimerInterval = null;
         let confirmCallback = null;
         let infoMessageTimeout = null;
+        let editingEntryId = null; // Stores the ID of the entry being edited
 
         // --- Utility Functions ---
+
+        function generateUniqueId() {
+            return Date.now().toString(36) + Math.random().toString(36).substring(2, 9);
+        }
 
         function showMessage(message, type = 'info', callback = null, isLoading = false) {
             console.log('Attempting to show message:', message, 'Type:', type, 'isLoading:', isLoading);
@@ -375,7 +393,6 @@
                 modalCancelButton.classList.toggle('hidden', (type !== 'confirm'));
 
                 loadingIndicator.classList.toggle('hidden', !isLoading);
-                // Use the getter function for modalButtons
                 const currentModalButtons = getModalButtons();
                 if (currentModalButtons) {
                     currentModalButtons.classList.toggle('hidden', isLoading); 
@@ -393,7 +410,6 @@
             messageModal.style.display = 'none';
             confirmCallback = null;
             loadingIndicator.classList.add('hidden');
-            // Use the getter function for modalButtons
             const currentModalButtons = getModalButtons();
             if (currentModalButtons) {
                 currentModalButtons.classList.remove('hidden'); 
@@ -415,7 +431,11 @@
             if (storedData) {
                 const parsedData = JSON.parse(storedData);
                 data.availableJobs = parsedData.availableJobs || [];
-                data.entries = parsedData.entries || [];
+                // Ensure each loaded entry has an ID, assign one if missing (for old data)
+                data.entries = (parsedData.entries || []).map(entry => ({
+                    ...entry,
+                    id: entry.id || generateUniqueId() 
+                }));
                 if (parsedData.activeJobName && parsedData.activeJobStartTime) {
                     data.activeJobName = parsedData.activeJobName;
                     data.activeJobStartTime = new Date(parsedData.activeJobStartTime);
@@ -495,13 +515,34 @@
                 totalDurationAllJobs += duration;
 
                 entryDiv.innerHTML = `
-                    <p class="font-semibold text-indigo-800 text-lg">${entry.job_name}</p>
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="font-semibold text-indigo-800 text-lg">${entry.job_name}</p>
+                        <div class="flex space-x-2">
+                            <button class="btn btn-edit px-2 py-1 text-sm" data-id="${entry.id}">Edit</button>
+                            <button class="btn btn-danger px-2 py-1 text-sm" data-id="${entry.id}">Delete</button>
+                        </div>
+                    </div>
                     <p class="text-sm text-gray-600">Start: ${startTime.toLocaleString()}</p>
                     <p class="text-sm text-gray-600">End: ${endTime.toLocaleString()}</p>
                     <p class="text-md text-gray-700 font-medium">Duration: ${formatDuration(duration)}</p>
                 `;
                 entriesList.appendChild(entryDiv);
             });
+
+            // Add event listeners for new Edit/Delete buttons
+            entriesList.querySelectorAll('.btn-edit').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const id = event.target.dataset.id;
+                    editEntry(id);
+                });
+            });
+            entriesList.querySelectorAll('.btn-danger').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const id = event.target.dataset.id;
+                    deleteEntry(id);
+                });
+            });
+
 
             const totalDurationElement = document.createElement('div');
             totalDurationElement.classList.add('text-right', 'font-bold', 'text-gray-800', 'mt-4', 'pt-4', 'border-t', 'border-gray-200');
@@ -570,6 +611,7 @@
             const durationSeconds = (endTime - data.activeJobStartTime) / 1000;
 
             data.entries.push({
+                id: generateUniqueId(), // Assign a unique ID
                 job_name: data.activeJobName,
                 start_time: data.activeJobStartTime.toISOString(),
                 end_time: endTime.toISOString(),
@@ -588,16 +630,16 @@
         }
 
         function addManualEntry() {
-            const selectedJob = manualJobInput.value.trim();
+            const jobName = manualJobInput.value.trim();
             const startTimeStr = manualStartTimeInput.value;
             const endTimeStr = manualEndTimeInput.value;
 
-            if (!selectedJob) {
+            if (!jobName) {
                 showMessage("Please enter or select a job name for the manual entry.", 'info');
                 return;
             }
 
-            ensureJobExists(selectedJob);
+            ensureJobExists(jobName);
 
             if (!startTimeStr || !endTimeStr) {
                 showMessage("Please select both start and end times for the manual entry.", 'info');
@@ -619,22 +661,99 @@
 
             const durationSeconds = (endTime - startTime) / 1000;
 
-            data.entries.push({
-                job_name: selectedJob,
-                start_time: startTime.toISOString(),
-                end_time: endTime.toISOString(),
-                duration_seconds: durationSeconds
-            });
+            if (editingEntryId) {
+                // Update existing entry
+                const entryIndex = data.entries.findIndex(entry => entry.id === editingEntryId);
+                if (entryIndex !== -1) {
+                    data.entries[entryIndex] = {
+                        id: editingEntryId,
+                        job_name: jobName,
+                        start_time: startTime.toISOString(),
+                        end_time: endTime.toISOString(),
+                        duration_seconds: durationSeconds
+                    };
+                    showMessage(`Entry for "${jobName}" updated successfully.`, 'info');
+                } else {
+                    showMessage("Error: Could not find entry to update.", 'info');
+                }
+                editingEntryId = null; // Clear editing state
+            } else {
+                // Add new entry
+                data.entries.push({
+                    id: generateUniqueId(), // Assign a unique ID for new entries
+                    job_name: jobName,
+                    start_time: startTime.toISOString(),
+                    end_time: endTime.toISOString(),
+                    duration_seconds: durationSeconds
+                });
+                showMessage(`Manual entry added for "${jobName}". Duration: ${formatDuration(durationSeconds)}`, 'info');
+            }
 
             saveData();
             renderEntries();
-            showMessage(`Manual entry added for "${selectedJob}". Duration: ${formatDuration(durationSeconds)}`, 'info');
+            resetManualEntryForm(); // Clear form and reset buttons
+            console.log(`Manual entry processed for: ${jobName}`);
+        }
 
+        function editEntry(id) {
+            const entryToEdit = data.entries.find(entry => entry.id === id);
+            if (entryToEdit) {
+                // Expand manual entry section if collapsed
+                if (!manualEntryContent.classList.contains('expanded')) {
+                    manualEntryContent.classList.add('expanded');
+                    manualEntryArrow.classList.add('rotated');
+                }
+
+                manualJobInput.value = entryToEdit.job_name;
+                // Format ISO string to datetime-local format (YYYY-MM-DDTHH:MM)
+                manualStartTimeInput.value = new Date(entryToEdit.start_time).toISOString().slice(0, 16);
+                manualEndTimeInput.value = new Date(entryToEdit.end_time).toISOString().slice(0, 16);
+                
+                addManualEntryButton.textContent = 'Update Entry';
+                addManualEntryButton.classList.remove('btn-primary');
+                addManualEntryButton.classList.add('btn-edit'); // Use edit styling
+                cancelEditButton.classList.remove('hidden'); // Show cancel button
+
+                editingEntryId = id; // Set editing state
+                showMessage(`Editing entry for "${entryToEdit.job_name}".`, 'info');
+            } else {
+                showMessage("Error: Entry not found for editing.", 'info');
+            }
+        }
+
+        function deleteEntry(id) {
+            showMessage(
+                "Are you sure you want to delete this time entry? This action cannot be undone.",
+                'confirm',
+                () => {
+                    const initialLength = data.entries.length;
+                    data.entries = data.entries.filter(entry => entry.id !== id);
+                    if (data.entries.length < initialLength) {
+                        saveData();
+                        renderEntries();
+                        showMessage("Entry deleted successfully.", 'info');
+                    } else {
+                        showMessage("Error: Could not find entry to delete.", 'info');
+                    }
+                    // If the deleted entry was being edited, reset the form
+                    if (editingEntryId === id) {
+                        resetManualEntryForm();
+                    }
+                }
+            );
+        }
+
+        function resetManualEntryForm() {
             manualJobInput.value = '';
             manualStartTimeInput.value = '';
             manualEndTimeInput.value = '';
-            console.log(`Manual entry added for: ${selectedJob}`);
+            addManualEntryButton.textContent = 'Add Manual Entry';
+            addManualEntryButton.classList.remove('btn-edit');
+            addManualEntryButton.classList.add('btn-primary');
+            cancelEditButton.classList.add('hidden');
+            editingEntryId = null; // Clear editing state
         }
+
 
         function clearAllEntries() {
             if (data.entries.length === 0 && !data.activeJobName && data.availableJobs.length === 0) {
@@ -740,6 +859,7 @@
         startButton.addEventListener('click', startJob);
         stopButton.addEventListener('click', stopJob);
         addManualEntryButton.addEventListener('click', addManualEntry);
+        cancelEditButton.addEventListener('click', resetManualEntryForm); // New listener
         clearAllButton.addEventListener('click', clearAllEntries);
 
         closeModalButton.addEventListener('click', () => {
