@@ -7,8 +7,6 @@ const urlsToCache = [
     'https://cdn.tailwindcss.com', // Explicitly cache Tailwind CSS
     'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap', // Google Fonts CSS
     // Add any other local assets (e.g., custom CSS, JS files, images)
-    // If you used the placeholder images for icons, they are external and won't be cached by default SW.
-    // For full offline capability, consider local icons.
 ];
 
 self.addEventListener('install', (event) => {
@@ -38,11 +36,6 @@ self.addEventListener('fetch', (event) => {
             })
             .catch(error => {
                 console.error('[Service Worker] Fetch failed for:', event.request.url, error);
-                // You could return an offline page here if needed
-                // For example, if the request is for an HTML page and it's offline:
-                // if (event.request.mode === 'navigate') {
-                //     return caches.match('./offline.html'); // Assuming you have an offline.html
-                // }
             })
     );
 });
