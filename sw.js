@@ -1,12 +1,14 @@
-const CACHE_NAME = 'jobtrack-v1';
+const CACHE_NAME = 'jobtrack-v1.1'; // Increment cache version to ensure new SW is installed
 const urlsToCache = [
-    './', // Caches the root (index.html or time_tracker.html)
-    './index.html', // Explicitly cache index.html if that's your main file
-    './time_tracker.html', // Or time_tracker.html if you stick to that name
+    './',
+    './index.html', // Or time_tracker.html if that's your main file
     './manifest.json',
-    // Tailwind CSS is loaded from CDN, so no need to cache it directly here.
-    // If you were self-hosting it, you'd add its path.
+    './sw.js', // Cache the service worker itself
+    'https://cdn.tailwindcss.com', // Explicitly cache Tailwind CSS
+    'https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap', // Google Fonts CSS
     // Add any other local assets (e.g., custom CSS, JS files, images)
+    // If you used the placeholder images for icons, they are external and won't be cached by default SW.
+    // For full offline capability, consider local icons.
 ];
 
 self.addEventListener('install', (event) => {
@@ -27,18 +29,20 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
         caches.match(event.request)
             .then((response) => {
-                // Cache hit - return response
                 if (response) {
                     console.log('[Service Worker] Serving from cache:', event.request.url);
                     return response;
                 }
-                // No cache hit - fetch from network
                 console.log('[Service Worker] Fetching from network:', event.request.url);
                 return fetch(event.request);
             })
             .catch(error => {
-                console.error('[Service Worker] Fetch failed:', error);
+                console.error('[Service Worker] Fetch failed for:', event.request.url, error);
                 // You could return an offline page here if needed
+                // For example, if the request is for an HTML page and it's offline:
+                // if (event.request.mode === 'navigate') {
+                //     return caches.match('./offline.html'); // Assuming you have an offline.html
+                // }
             })
     );
 });
