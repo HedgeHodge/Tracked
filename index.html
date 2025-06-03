@@ -527,12 +527,12 @@
             const liveStartInputVal = liveStartTimeInput.value;
 
             if (!selectedJob) {
-                showMessage("Please enter or select a job name to start tracking.", 'info'); // Use info message for errors
+                showMessage("Please enter or select a job name to start tracking.", 'info');
                 return;
             }
 
             if (data.activeJobName) {
-                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'info'); // Use info message for errors
+                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'info');
                 return;
             }
 
@@ -548,7 +548,7 @@
             }
 
             if (chosenStartTime > new Date()) {
-                showMessage("Start time cannot be in the future.", 'info'); // Use info message for errors
+                showMessage("Start time cannot be in the future.", 'info');
                 return;
             }
 
@@ -562,7 +562,7 @@
 
         function stopJob() {
             if (!data.activeJobName || !data.activeJobStartTime) {
-                showMessage("No job is currently running.", 'info'); // Use info message for errors
+                showMessage("No job is currently running.", 'info');
                 return;
             }
 
@@ -593,14 +593,14 @@
             const endTimeStr = manualEndTimeInput.value;
 
             if (!selectedJob) {
-                showMessage("Please enter or select a job name for the manual entry.", 'info'); // Use info message for errors
+                showMessage("Please enter or select a job name for the manual entry.", 'info');
                 return;
             }
 
             ensureJobExists(selectedJob);
 
             if (!startTimeStr || !endTimeStr) {
-                showMessage("Please select both start and end times for the manual entry.", 'info'); // Use info message for errors
+                showMessage("Please select both start and end times for the manual entry.", 'info');
                 return;
             }
 
@@ -608,12 +608,12 @@
             const endTime = new Date(endTimeStr);
 
             if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-                showMessage("Invalid date/time format. Please use the provided date/time picker.", 'info'); // Use info message for errors
+                showMessage("Invalid date/time format. Please use the provided date/time picker.", 'info');
                 return;
             }
 
             if (endTime <= startTime) {
-                showMessage("End time must be after start time for manual entry.", 'info'); // Use info message for errors
+                showMessage("End time must be after start time for manual entry.", 'info');
                 return;
             }
 
@@ -638,7 +638,7 @@
 
         function clearAllEntries() {
             if (data.entries.length === 0 && !data.activeJobName && data.availableJobs.length === 0) {
-                showMessage("There are no entries or active jobs to clear.", 'info'); // Use info message for errors
+                showMessage("There are no entries or active jobs to clear.", 'info');
                 return;
             }
 
@@ -700,7 +700,7 @@
 
         async function summarizeEntries() {
             if (data.entries.length === 0) {
-                showMessage("No time entries to summarize yet.", 'info'); // Use info message for errors
+                showMessage("No time entries to summarize yet.", 'info');
                 return;
             }
 
