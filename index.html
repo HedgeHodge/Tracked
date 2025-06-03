@@ -3,7 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Web Time Tracker</title>
+    <title>JobTrack Time Tracker</title>
+    <!-- Link to Web App Manifest -->
+    <link rel="manifest" href="manifest.json">
+    <!-- Theme color for Android browser toolbar -->
+    <meta name="theme-color" content="#4f46e5">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
@@ -196,7 +201,7 @@
     </div>
 
     <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Time Tracker</h1>
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JobTrack Time Tracker</h1>
 
         <div class="mb-6 p-4 bg-indigo-50 rounded-lg shadow-inner">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Tracking</h2>
@@ -284,9 +289,25 @@
     </div>
 
     <script>
+        // Service Worker Registration
+        // This registration will work when hosted on HTTPS (like GitHub Pages).
+        // The error "The URL protocol of the script (':') is not supported" typically occurs
+        // when running from a local 'blob:' URL (e.g., in a development preview iframe).
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(registration => {
+                        console.log('Service Worker registered with scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Service Worker registration failed:', error);
+                    });
+            });
+        }
+
         // DOM Elements - Live Tracking
-        const jobInput = document.getElementById('jobInput'); // Consolidated input
-        const jobDatalist = document.getElementById('jobDatalist'); // Datalist for suggestions
+        const jobInput = document.getElementById('jobInput');
+        const jobDatalist = document.getElementById('jobDatalist');
         const liveStartTimeInput = document.getElementById('liveStartTimeInput');
         const startButton = document.getElementById('startButton');
         const stopButton = document.getElementById('stopButton');
@@ -298,7 +319,7 @@
         const manualEntryHeader = document.getElementById('manualEntryHeader');
         const manualEntryContent = document.getElementById('manualEntryContent');
         const manualEntryArrow = document.getElementById('manualEntryArrow');
-        const manualJobInput = document.getElementById('manualJobInput'); // Consolidated input
+        const manualJobInput = document.getElementById('manualJobInput');
         const manualStartTimeInput = document.getElementById('manualStartTimeInput');
         const manualEndTimeInput = document.getElementById('manualEndTimeInput');
         const addManualEntryButton = document.getElementById('addManualEntryButton');
@@ -315,7 +336,9 @@
         const modalOkButton = document.getElementById('modalOkButton');
         const modalCancelButton = document.getElementById('modalCancelButton');
         const loadingIndicator = document.getElementById('loadingIndicator');
-        const modalButtons = document.getElementById('modalButtons');
+        // Ensure modalButtons is robustly accessed
+        const getModalButtons = () => document.getElementById('modalButtons'); 
+
 
         // New DOM elements for temporary info message
         const infoMessageContainer = document.getElementById('infoMessageContainer');
@@ -331,32 +354,32 @@
         };
         let activeTimerInterval = null;
         let confirmCallback = null;
-        let infoMessageTimeout = null; // To store the timeout for temporary messages
+        let infoMessageTimeout = null;
 
         // --- Utility Functions ---
 
-        // Unified message display function
         function showMessage(message, type = 'info', callback = null, isLoading = false) {
             console.log('Attempting to show message:', message, 'Type:', type, 'isLoading:', isLoading);
 
             if (type === 'info') {
-                // Display temporary info message
                 infoMessageText.textContent = message;
                 infoMessageContainer.classList.add('show');
                 
-                // Clear any existing timeout to prevent multiple messages overlapping
                 clearTimeout(infoMessageTimeout);
                 infoMessageTimeout = setTimeout(() => {
                     infoMessageContainer.classList.remove('show');
-                }, 3000); // Message disappears after 3 seconds
-            } else {
-                // Display modal message (error, confirm, summary)
+                }, 3000);
+            } else { // 'modal', 'confirm', 'error'
                 modalMessage.textContent = message;
                 modalOkButton.textContent = (type === 'confirm') ? 'Confirm' : 'OK';
                 modalCancelButton.classList.toggle('hidden', (type !== 'confirm'));
 
                 loadingIndicator.classList.toggle('hidden', !isLoading);
-                modalButtons.classList.toggle('hidden', isLoading); 
+                // Use the getter function for modalButtons
+                const currentModalButtons = getModalButtons();
+                if (currentModalButtons) {
+                    currentModalButtons.classList.toggle('hidden', isLoading); 
+                }
 
                 confirmCallback = callback;
 
@@ -365,13 +388,16 @@
             }
         }
 
-        // Hides only the modal message
         function hideModal() {
             console.log('Attempting to hide modal.');
             messageModal.style.display = 'none';
             confirmCallback = null;
             loadingIndicator.classList.add('hidden');
-            modalButtons.classList.remove('hidden'); 
+            // Use the getter function for modalButtons
+            const currentModalButtons = getModalButtons();
+            if (currentModalButtons) {
+                currentModalButtons.classList.remove('hidden'); 
+            }
             console.log('Modal hidden successfully (display: none).');
         }
 
@@ -421,7 +447,7 @@
                 currentJobName.textContent = data.activeJobName;
                 startButton.disabled = true;
                 stopButton.disabled = false;
-                jobInput.disabled = true; // Disable job input when tracking
+                jobInput.disabled = true;
                 liveStartTimeInput.disabled = true;
 
                 clearInterval(activeTimerInterval);
@@ -436,8 +462,8 @@
                 currentJobElapsedTime.textContent = '00:00:00';
                 startButton.disabled = false;
                 stopButton.disabled = true;
-                jobInput.disabled = false; // Enable job input
-                jobInput.value = ''; // Clear job input
+                jobInput.disabled = false;
+                jobInput.value = '';
                 liveStartTimeInput.value = '';
                 liveStartTimeInput.disabled = false;
                 clearInterval(activeTimerInterval);
@@ -491,7 +517,7 @@
                 data.availableJobs.push(jobName);
                 data.availableJobs.sort();
                 saveData();
-                populateJobDatalist(); // Update datalist after adding new job
+                populateJobDatalist();
                 console.log(`Added new job to available list: ${jobName}`);
             }
         }
@@ -501,12 +527,12 @@
             const liveStartInputVal = liveStartTimeInput.value;
 
             if (!selectedJob) {
-                showMessage("Please enter or select a job name to start tracking.", 'error');
+                showMessage("Please enter or select a job name to start tracking.", 'info'); // Use info message for errors
                 return;
             }
 
             if (data.activeJobName) {
-                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'error');
+                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'info'); // Use info message for errors
                 return;
             }
 
@@ -522,7 +548,7 @@
             }
 
             if (chosenStartTime > new Date()) {
-                showMessage("Start time cannot be in the future.", 'error');
+                showMessage("Start time cannot be in the future.", 'info'); // Use info message for errors
                 return;
             }
 
@@ -530,13 +556,13 @@
             data.activeJobStartTime = chosenStartTime;
             saveData();
             updateCurrentJobDisplay();
-            showMessage(`Started tracking time for: "${data.activeJobName}"`, 'info'); // Use info message
+            showMessage(`Started tracking time for: "${data.activeJobName}"`, 'info');
             console.log(`Started job: ${data.activeJobName} at ${data.activeJobStartTime.toISOString()}`);
         }
 
         function stopJob() {
             if (!data.activeJobName || !data.activeJobStartTime) {
-                showMessage("No job is currently running.", 'error');
+                showMessage("No job is currently running.", 'info'); // Use info message for errors
                 return;
             }
 
@@ -550,14 +576,14 @@
                 duration_seconds: durationSeconds
             });
 
-            const stoppedJobName = data.activeJobName; // Capture before clearing
+            const stoppedJobName = data.activeJobName;
             data.activeJobName = null;
             data.activeJobStartTime = null;
 
             saveData();
             updateCurrentJobDisplay();
             renderEntries();
-            showMessage(`Stopped tracking "${stoppedJobName}". Duration: ${formatDuration(durationSeconds)}`, 'info'); // Use info message
+            showMessage(`Stopped tracking "${stoppedJobName}". Duration: ${formatDuration(durationSeconds)}`, 'info');
             console.log(`Stopped job. Duration: ${durationSeconds}s`);
         }
 
@@ -567,14 +593,14 @@
             const endTimeStr = manualEndTimeInput.value;
 
             if (!selectedJob) {
-                showMessage("Please enter or select a job name for the manual entry.", 'error');
+                showMessage("Please enter or select a job name for the manual entry.", 'info'); // Use info message for errors
                 return;
             }
 
             ensureJobExists(selectedJob);
 
             if (!startTimeStr || !endTimeStr) {
-                showMessage("Please select both start and end times for the manual entry.", 'error');
+                showMessage("Please select both start and end times for the manual entry.", 'info'); // Use info message for errors
                 return;
             }
 
@@ -582,12 +608,12 @@
             const endTime = new Date(endTimeStr);
 
             if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
-                showMessage("Invalid date/time format. Please use the provided date/time picker.", 'error');
+                showMessage("Invalid date/time format. Please use the provided date/time picker.", 'info'); // Use info message for errors
                 return;
             }
 
             if (endTime <= startTime) {
-                showMessage("End time must be after start time for manual entry.", 'error');
+                showMessage("End time must be after start time for manual entry.", 'info'); // Use info message for errors
                 return;
             }
 
@@ -602,7 +628,7 @@
 
             saveData();
             renderEntries();
-            showMessage(`Manual entry added for "${selectedJob}". Duration: ${formatDuration(durationSeconds)}`, 'info'); // Use info message
+            showMessage(`Manual entry added for "${selectedJob}". Duration: ${formatDuration(durationSeconds)}`, 'info');
 
             manualJobInput.value = '';
             manualStartTimeInput.value = '';
@@ -612,7 +638,7 @@
 
         function clearAllEntries() {
             if (data.entries.length === 0 && !data.activeJobName && data.availableJobs.length === 0) {
-                showMessage("There are no entries or active jobs to clear.", 'error');
+                showMessage("There are no entries or active jobs to clear.", 'info'); // Use info message for errors
                 return;
             }
 
@@ -628,7 +654,7 @@
                     populateJobDatalist();
                     updateCurrentJobDisplay();
                     renderEntries();
-                    showMessage("All data has been cleared.", 'info'); // Use info message
+                    showMessage("All data has been cleared.", 'info');
                     console.log('All data cleared.');
                 }
             );
@@ -637,7 +663,7 @@
         // --- Gemini API Integration Functions ---
 
         async function callGeminiAPI(prompt) {
-            const apiKey = ""; // Leave this as-is. Canvas will provide the API key at runtime.
+            const apiKey = "";
             const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
 
             const payload = {
@@ -674,11 +700,11 @@
 
         async function summarizeEntries() {
             if (data.entries.length === 0) {
-                showMessage("No time entries to summarize yet.", 'error');
+                showMessage("No time entries to summarize yet.", 'info'); // Use info message for errors
                 return;
             }
 
-            showMessage("Summarizing entries...", 'modal', null, true); // Use modal for loading
+            showMessage("Summarizing entries...", 'modal', null, true);
 
             let entriesText = "";
             const jobDurations = {};
@@ -703,13 +729,12 @@
 
             const summary = await callGeminiAPI(prompt);
 
-            showMessage(`Time Entries Summary:\n\n${summary}`, 'modal'); // Show result in modal
+            showMessage(`Time Entries Summary:\n\n${summary}`, 'modal');
         }
 
 
         // --- Event Listeners ---
 
-        // No longer need addNewJobButton listener as it's integrated into jobInput
         summarizeEntriesButton.addEventListener('click', summarizeEntries);
 
         startButton.addEventListener('click', startJob);
@@ -719,24 +744,24 @@
 
         closeModalButton.addEventListener('click', () => {
             console.log('Close button clicked.');
-            hideModal(); // Only hide modal
+            hideModal();
         });
         modalOkButton.addEventListener('click', () => {
             console.log('OK/Confirm button clicked.');
             if (confirmCallback) {
                 confirmCallback();
             }
-            hideModal(); // Only hide modal
+            hideModal();
         });
         modalCancelButton.addEventListener('click', () => {
             console.log('Cancel button clicked.');
-            hideModal(); // Only hide modal
+            hideModal();
         });
 
         window.addEventListener('click', (event) => {
             if (event.target == messageModal) {
                 console.log('Clicked outside modal.');
-                hideModal(); // Only hide modal
+                hideModal();
             }
         });
 
