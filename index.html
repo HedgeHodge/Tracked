@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Web Time Tracker</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 600px;
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            cursor: pointer;
+            border: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary {
+            background-color: #4f46e5;
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #4338ca;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #6b7280;
+            color: white;
+        }
+        .btn-secondary:hover {
+            background-color: #4b5563;
+            transform: translateY(-2px);
+        }
+        .btn-ai {
+            background-color: #8b5cf6; /* Purple for AI features */
+            color: white;
+        }
+        .btn-ai:hover {
+            background-color: #7c3aed;
+            transform: translateY(-2px);
+        }
+        .input-field {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid #d1d5db;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+        .input-field:focus {
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.4);
+            justify-content: center;
+            align-items: center;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .close-button {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        .close-button:hover,
+        .close-button:focus {
+            color: #000;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin-right: 8px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Collapsible Section Styles */
+        .collapsible-header {
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #4a5568;
+            border-bottom: 1px solid #e2e8f0;
+            margin-bottom: 15px;
+        }
+        .collapsible-header:hover {
+            color: #2d3748;
+        }
+        .collapsible-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        .collapsible-content.expanded {
+            max-height: 500px; /* Adjust as needed based on content height */
+            transition: max-height 0.5s ease-in;
+        }
+        .collapsible-arrow {
+            transition: transform 0.3s ease;
+        }
+        .collapsible-arrow.rotated {
+            transform: rotate(90deg);
+        }
+
+        /* Temporary Info Message Styles */
+        #infoMessageContainer {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50; /* Green */
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease-in-out, visibility 0.5s ease-in-out;
+            min-width: 250px;
+            text-align: center;
+        }
+        #infoMessageContainer.show {
+            opacity: 1;
+            visibility: visible;
+        }
+    </style>
+</head>
+<body class="antialiased">
+    <div id="infoMessageContainer">
+        <p id="infoMessageText"></p>
+    </div>
+
+    <div class="container">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Time Tracker</h1>
+
+        <div class="mb-6 p-4 bg-indigo-50 rounded-lg shadow-inner">
+            <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Tracking</h2>
+            
+            <label for="jobInput" class="block text-gray-700 text-sm font-semibold mb-2">Job Name:</label>
+            <input type="text" id="jobInput" list="jobDatalist" placeholder="Select or type a job name" class="input-field mb-4">
+            <datalist id="jobDatalist">
+                </datalist>
+            
+            <label for="liveStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start Time (Optional - for past time on today's date):</label>
+            <input type="time" id="liveStartTimeInput" class="input-field mb-4">
+
+            <div class="flex flex-col sm:flex-row gap-4">
+                <button id="startButton" class="btn btn-primary flex-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.38 2.872-1.624L19.32 12 7.372 20.971c-1.343.756-2.872-.118-2.872-1.624V5.653Z" clip-rule="evenodd" />
+                    </svg>
+                    Start Job
+                </button>
+                <button id="stopButton" class="btn btn-danger flex-1" disabled>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" />
+                    </svg>
+                    Stop Job
+                </button>
+            </div>
+        </div>
+
+        <div id="currentJobDisplay" class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200 hidden">
+            <h2 class="text-xl font-semibold text-gray-800 mb-2">Currently Tracking:</h2>
+            <p class="text-lg text-gray-600">Job: <span id="currentJobName" class="font-medium text-indigo-700"></span></p>
+            <p class="text-lg text-gray-600">Elapsed: <span id="currentJobElapsedTime" class="font-medium text-green-600">00:00:00</span></p>
+        </div>
+
+        <div class="mb-6 p-4 bg-purple-50 rounded-lg shadow-inner">
+            <div class="collapsible-header" id="manualEntryHeader">
+                <h2>Manual Entry</h2>
+                <svg id="manualEntryArrow" class="collapsible-arrow w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
+                </svg>
+            </div>
+            <div class="collapsible-content" id="manualEntryContent">
+                <label for="manualJobInput" class="block text-gray-700 text-sm font-semibold mb-2">Job Name:</label>
+                <input type="text" id="manualJobInput" list="jobDatalist" placeholder="Select or type a job name" class="input-field mb-4">
+                <label for="manualStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start Time:</label>
+                <input type="datetime-local" id="manualStartTimeInput" class="input-field mb-4">
+
+                <label for="manualEndTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">End Time:</label>
+                <input type="datetime-local" id="manualEndTimeInput" class="input-field mb-4">
+
+                <button id="addManualEntryButton" class="btn btn-primary w-full">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                        <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                    </svg>
+                    Add Manual Entry
+                </button>
+            </div>
+        </div>
+
+        <div class="p-4 bg-white rounded-lg shadow-md border border-gray-200">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold text-gray-800">Time Entries</h2>
+                <button id="summarizeEntriesButton" class="btn btn-ai text-sm px-3 py-1">✨ Summarize Entries</button>
+                <button id="clearAllButton" class="btn btn-secondary text-sm px-3 py-1">Clear All</button>
+            </div>
+            <div id="entriesList" class="space-y-3">
+                <p class="text-gray-500 text-center" id="noEntriesMessage">No time entries recorded yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="messageModal" class="modal">
+        <div class="modal-content">
+            <span class="close-button" id="closeModalButton">&times;</span>
+            <p id="modalMessage" class="text-lg text-gray-700"></p>
+            <div id="modalButtons" class="flex justify-center gap-4 mt-4">
+                <button id="modalOkButton" class="btn btn-primary">OK</button>
+                <button id="modalCancelButton" class="btn btn-secondary hidden">Cancel</button>
+            </div>
+            <div id="loadingIndicator" class="hidden flex items-center justify-center mt-4 text-gray-600">
+                <div class="loading-spinner"></div>
+                <span>Generating...</span>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements - Live Tracking
+        const jobInput = document.getElementById('jobInput'); // Consolidated input
+        const jobDatalist = document.getElementById('jobDatalist'); // Datalist for suggestions
+        const liveStartTimeInput = document.getElementById('liveStartTimeInput');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const currentJobDisplay = document.getElementById('currentJobDisplay');
+        const currentJobName = document.getElementById('currentJobName');
+        const currentJobElapsedTime = document.getElementById('currentJobElapsedTime');
+
+        // DOM Elements - Manual Entry
+        const manualEntryHeader = document.getElementById('manualEntryHeader');
+        const manualEntryContent = document.getElementById('manualEntryContent');
+        const manualEntryArrow = document.getElementById('manualEntryArrow');
+        const manualJobInput = document.getElementById('manualJobInput'); // Consolidated input
+        const manualStartTimeInput = document.getElementById('manualStartTimeInput');
+        const manualEndTimeInput = document.getElementById('manualEndTimeInput');
+        const addManualEntryButton = document.getElementById('addManualEntryButton');
+
+        // DOM Elements - General
+        const entriesList = document.getElementById('entriesList');
+        const noEntriesMessage = document.getElementById('noEntriesMessage');
+        const clearAllButton = document.getElementById('clearAllButton');
+        const summarizeEntriesButton = document.getElementById('summarizeEntriesButton');
+
+        const messageModal = document.getElementById('messageModal');
+        const modalMessage = document.getElementById('modalMessage');
+        const closeModalButton = document.getElementById('closeModalButton');
+        const modalOkButton = document.getElementById('modalOkButton');
+        const modalCancelButton = document.getElementById('modalCancelButton');
+        const loadingIndicator = document.getElementById('loadingIndicator');
+        const modalButtons = document.getElementById('modalButtons');
+
+        // New DOM elements for temporary info message
+        const infoMessageContainer = document.getElementById('infoMessageContainer');
+        const infoMessageText = document.getElementById('infoMessageText');
+
+
+        // Global state
+        let data = {
+            availableJobs: [],
+            activeJobName: null,
+            activeJobStartTime: null,
+            entries: []
+        };
+        let activeTimerInterval = null;
+        let confirmCallback = null;
+        let infoMessageTimeout = null; // To store the timeout for temporary messages
+
+        // --- Utility Functions ---
+
+        // Unified message display function
+        function showMessage(message, type = 'info', callback = null, isLoading = false) {
+            console.log('Attempting to show message:', message, 'Type:', type, 'isLoading:', isLoading);
+
+            if (type === 'info') {
+                // Display temporary info message
+                infoMessageText.textContent = message;
+                infoMessageContainer.classList.add('show');
+                
+                // Clear any existing timeout to prevent multiple messages overlapping
+                clearTimeout(infoMessageTimeout);
+                infoMessageTimeout = setTimeout(() => {
+                    infoMessageContainer.classList.remove('show');
+                }, 3000); // Message disappears after 3 seconds
+            } else {
+                // Display modal message (error, confirm, summary)
+                modalMessage.textContent = message;
+                modalOkButton.textContent = (type === 'confirm') ? 'Confirm' : 'OK';
+                modalCancelButton.classList.toggle('hidden', (type !== 'confirm'));
+
+                loadingIndicator.classList.toggle('hidden', !isLoading);
+                modalButtons.classList.toggle('hidden', isLoading); 
+
+                confirmCallback = callback;
+
+                messageModal.style.display = 'flex';
+                console.log('Modal shown (display: flex).');
+            }
+        }
+
+        // Hides only the modal message
+        function hideModal() {
+            console.log('Attempting to hide modal.');
+            messageModal.style.display = 'none';
+            confirmCallback = null;
+            loadingIndicator.classList.add('hidden');
+            modalButtons.classList.remove('hidden'); 
+            console.log('Modal hidden successfully (display: none).');
+        }
+
+        function formatDuration(seconds) {
+            const h = Math.floor(seconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((seconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(seconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+
+        // --- Data Persistence (localStorage) ---
+
+        function loadData() {
+            const storedData = localStorage.getItem('timeTrackerData');
+            if (storedData) {
+                const parsedData = JSON.parse(storedData);
+                data.availableJobs = parsedData.availableJobs || [];
+                data.entries = parsedData.entries || [];
+                if (parsedData.activeJobName && parsedData.activeJobStartTime) {
+                    data.activeJobName = parsedData.activeJobName;
+                    data.activeJobStartTime = new Date(parsedData.activeJobStartTime);
+                }
+            }
+            console.log('Data loaded:', data);
+        }
+
+        function saveData() {
+            localStorage.setItem('timeTrackerData', JSON.stringify(data));
+            console.log('Data saved:', data);
+        }
+
+        // --- UI Rendering Functions ---
+
+        function populateJobDatalist() {
+            jobDatalist.innerHTML = '';
+            data.availableJobs.forEach(job => {
+                const option = document.createElement('option');
+                option.value = job;
+                jobDatalist.appendChild(option);
+            });
+            console.log('Job datalist populated.');
+        }
+
+        function updateCurrentJobDisplay() {
+            if (data.activeJobName && data.activeJobStartTime) {
+                currentJobDisplay.classList.remove('hidden');
+                currentJobName.textContent = data.activeJobName;
+                startButton.disabled = true;
+                stopButton.disabled = false;
+                jobInput.disabled = true; // Disable job input when tracking
+                liveStartTimeInput.disabled = true;
+
+                clearInterval(activeTimerInterval);
+                activeTimerInterval = setInterval(() => {
+                    const elapsedSeconds = (new Date() - data.activeJobStartTime) / 1000;
+                    currentJobElapsedTime.textContent = formatDuration(elapsedSeconds);
+                }, 1000);
+                console.log('Current job display updated: Active.');
+            } else {
+                currentJobDisplay.classList.add('hidden');
+                currentJobName.textContent = '';
+                currentJobElapsedTime.textContent = '00:00:00';
+                startButton.disabled = false;
+                stopButton.disabled = true;
+                jobInput.disabled = false; // Enable job input
+                jobInput.value = ''; // Clear job input
+                liveStartTimeInput.value = '';
+                liveStartTimeInput.disabled = false;
+                clearInterval(activeTimerInterval);
+                console.log('Current job display updated: Inactive.');
+            }
+        }
+
+        function renderEntries() {
+            entriesList.innerHTML = '';
+            if (data.entries.length === 0) {
+                noEntriesMessage.classList.remove('hidden');
+                console.log('No entries to render, showing message.');
+                return;
+            } else {
+                noEntriesMessage.classList.add('hidden');
+            }
+
+            const sortedEntries = [...data.entries].sort((a, b) => new Date(b.end_time) - new Date(a.end_time));
+
+            let totalDurationAllJobs = 0;
+
+            sortedEntries.forEach(entry => {
+                const entryDiv = document.createElement('div');
+                entryDiv.classList.add('bg-gray-50', 'p-3', 'rounded-lg', 'shadow-sm', 'border', 'border-gray-100');
+
+                const startTime = new Date(entry.start_time);
+                const endTime = new Date(entry.end_time);
+                const duration = entry.duration_seconds;
+                totalDurationAllJobs += duration;
+
+                entryDiv.innerHTML = `
+                    <p class="font-semibold text-indigo-800 text-lg">${entry.job_name}</p>
+                    <p class="text-sm text-gray-600">Start: ${startTime.toLocaleString()}</p>
+                    <p class="text-sm text-gray-600">End: ${endTime.toLocaleString()}</p>
+                    <p class="text-md text-gray-700 font-medium">Duration: ${formatDuration(duration)}</p>
+                `;
+                entriesList.appendChild(entryDiv);
+            });
+
+            const totalDurationElement = document.createElement('div');
+            totalDurationElement.classList.add('text-right', 'font-bold', 'text-gray-800', 'mt-4', 'pt-4', 'border-t', 'border-gray-200');
+            totalDurationElement.textContent = `Total Recorded Time: ${formatDuration(totalDurationAllJobs)}`;
+            entriesList.appendChild(totalDurationElement);
+            console.log('Entries rendered.');
+        }
+
+        // --- Core Logic Functions ---
+
+        function ensureJobExists(jobName) {
+            if (!data.availableJobs.includes(jobName)) {
+                data.availableJobs.push(jobName);
+                data.availableJobs.sort();
+                saveData();
+                populateJobDatalist(); // Update datalist after adding new job
+                console.log(`Added new job to available list: ${jobName}`);
+            }
+        }
+
+        function startJob() {
+            const selectedJob = jobInput.value.trim();
+            const liveStartInputVal = liveStartTimeInput.value;
+
+            if (!selectedJob) {
+                showMessage("Please enter or select a job name to start tracking.", 'error');
+                return;
+            }
+
+            if (data.activeJobName) {
+                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'error');
+                return;
+            }
+
+            ensureJobExists(selectedJob);
+
+            let chosenStartTime;
+            if (liveStartInputVal) {
+                const now = new Date();
+                const [hours, minutes] = liveStartInputVal.split(':').map(Number);
+                chosenStartTime = new Date(now.getFullYear(), now.getMonth(), now.getDate(), hours, minutes, 0);
+            } else {
+                chosenStartTime = new Date();
+            }
+
+            if (chosenStartTime > new Date()) {
+                showMessage("Start time cannot be in the future.", 'error');
+                return;
+            }
+
+            data.activeJobName = selectedJob;
+            data.activeJobStartTime = chosenStartTime;
+            saveData();
+            updateCurrentJobDisplay();
+            showMessage(`Started tracking time for: "${data.activeJobName}"`, 'info'); // Use info message
+            console.log(`Started job: ${data.activeJobName} at ${data.activeJobStartTime.toISOString()}`);
+        }
+
+        function stopJob() {
+            if (!data.activeJobName || !data.activeJobStartTime) {
+                showMessage("No job is currently running.", 'error');
+                return;
+            }
+
+            const endTime = new Date();
+            const durationSeconds = (endTime - data.activeJobStartTime) / 1000;
+
+            data.entries.push({
+                job_name: data.activeJobName,
+                start_time: data.activeJobStartTime.toISOString(),
+                end_time: endTime.toISOString(),
+                duration_seconds: durationSeconds
+            });
+
+            const stoppedJobName = data.activeJobName; // Capture before clearing
+            data.activeJobName = null;
+            data.activeJobStartTime = null;
+
+            saveData();
+            updateCurrentJobDisplay();
+            renderEntries();
+            showMessage(`Stopped tracking "${stoppedJobName}". Duration: ${formatDuration(durationSeconds)}`, 'info'); // Use info message
+            console.log(`Stopped job. Duration: ${durationSeconds}s`);
+        }
+
+        function addManualEntry() {
+            const selectedJob = manualJobInput.value.trim();
+            const startTimeStr = manualStartTimeInput.value;
+            const endTimeStr = manualEndTimeInput.value;
+
+            if (!selectedJob) {
+                showMessage("Please enter or select a job name for the manual entry.", 'error');
+                return;
+            }
+
+            ensureJobExists(selectedJob);
+
+            if (!startTimeStr || !endTimeStr) {
+                showMessage("Please select both start and end times for the manual entry.", 'error');
+                return;
+            }
+
+            const startTime = new Date(startTimeStr);
+            const endTime = new Date(endTimeStr);
+
+            if (isNaN(startTime.getTime()) || isNaN(endTime.getTime())) {
+                showMessage("Invalid date/time format. Please use the provided date/time picker.", 'error');
+                return;
+            }
+
+            if (endTime <= startTime) {
+                showMessage("End time must be after start time for manual entry.", 'error');
+                return;
+            }
+
+            const durationSeconds = (endTime - startTime) / 1000;
+
+            data.entries.push({
+                job_name: selectedJob,
+                start_time: startTime.toISOString(),
+                end_time: endTime.toISOString(),
+                duration_seconds: durationSeconds
+            });
+
+            saveData();
+            renderEntries();
+            showMessage(`Manual entry added for "${selectedJob}". Duration: ${formatDuration(durationSeconds)}`, 'info'); // Use info message
+
+            manualJobInput.value = '';
+            manualStartTimeInput.value = '';
+            manualEndTimeInput.value = '';
+            console.log(`Manual entry added for: ${selectedJob}`);
+        }
+
+        function clearAllEntries() {
+            if (data.entries.length === 0 && !data.activeJobName && data.availableJobs.length === 0) {
+                showMessage("There are no entries or active jobs to clear.", 'error');
+                return;
+            }
+
+            showMessage(
+                "Are you sure you want to clear ALL time entries, active jobs, and saved job names? This action cannot be undone.",
+                'confirm',
+                () => {
+                    data.entries = [];
+                    data.availableJobs = [];
+                    data.activeJobName = null;
+                    data.activeJobStartTime = null;
+                    saveData();
+                    populateJobDatalist();
+                    updateCurrentJobDisplay();
+                    renderEntries();
+                    showMessage("All data has been cleared.", 'info'); // Use info message
+                    console.log('All data cleared.');
+                }
+            );
+        }
+
+        // --- Gemini API Integration Functions ---
+
+        async function callGeminiAPI(prompt) {
+            const apiKey = ""; // Leave this as-is. Canvas will provide the API key at runtime.
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+            const payload = {
+                contents: [{ role: "user", parts: [{ text: prompt }] }]
+            };
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    console.error('Gemini API error:', errorData);
+                    throw new Error(`Gemini API request failed: ${response.status} ${response.statusText} - ${errorData.error.message}`);
+                }
+
+                const result = await response.json();
+                if (result.candidates && result.candidates.length > 0 &&
+                    result.candidates[0].content && result.candidates[0].content.parts &&
+                    result.candidates[0].content.parts.length > 0) {
+                    return result.candidates[0].content.parts[0].text;
+                } else {
+                    console.warn('Gemini API response structure unexpected:', result);
+                    return "Could not generate a response. Unexpected API structure.";
+                }
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                return `Error generating response: ${error.message}`;
+            }
+        }
+
+        async function summarizeEntries() {
+            if (data.entries.length === 0) {
+                showMessage("No time entries to summarize yet.", 'error');
+                return;
+            }
+
+            showMessage("Summarizing entries...", 'modal', null, true); // Use modal for loading
+
+            let entriesText = "";
+            const jobDurations = {};
+
+            data.entries.forEach(entry => {
+                const startTime = new Date(entry.start_time).toLocaleString();
+                const endTime = new Date(entry.end_time).toLocaleString();
+                const duration = formatDuration(entry.duration_seconds);
+                entriesText += `- Job: ${entry.job_name}, Start: ${startTime}, End: ${endTime}, Duration: ${duration}\n`;
+
+                jobDurations[entry.job_name] = (jobDurations[entry.job_name] || 0) + entry.duration_seconds;
+            });
+
+            let totalDurationsSummary = "\nTotal duration per job:\n";
+            for (const job in jobDurations) {
+                totalDurationsSummary += `- ${job}: ${formatDuration(jobDurations[job])}\n`;
+            }
+
+            const prompt = `Summarize the following time tracking entries into a brief overview of activities. Group similar activities if possible. Include the total duration for each unique job.
+            
+            Entries:\n${entriesText}\n${totalDurationsSummary}`;
+
+            const summary = await callGeminiAPI(prompt);
+
+            showMessage(`Time Entries Summary:\n\n${summary}`, 'modal'); // Show result in modal
+        }
+
+
+        // --- Event Listeners ---
+
+        // No longer need addNewJobButton listener as it's integrated into jobInput
+        summarizeEntriesButton.addEventListener('click', summarizeEntries);
+
+        startButton.addEventListener('click', startJob);
+        stopButton.addEventListener('click', stopJob);
+        addManualEntryButton.addEventListener('click', addManualEntry);
+        clearAllButton.addEventListener('click', clearAllEntries);
+
+        closeModalButton.addEventListener('click', () => {
+            console.log('Close button clicked.');
+            hideModal(); // Only hide modal
+        });
+        modalOkButton.addEventListener('click', () => {
+            console.log('OK/Confirm button clicked.');
+            if (confirmCallback) {
+                confirmCallback();
+            }
+            hideModal(); // Only hide modal
+        });
+        modalCancelButton.addEventListener('click', () => {
+            console.log('Cancel button clicked.');
+            hideModal(); // Only hide modal
+        });
+
+        window.addEventListener('click', (event) => {
+            if (event.target == messageModal) {
+                console.log('Clicked outside modal.');
+                hideModal(); // Only hide modal
+            }
+        });
+
+        // Toggle Manual Entry section
+        manualEntryHeader.addEventListener('click', () => {
+            manualEntryContent.classList.toggle('expanded');
+            manualEntryArrow.classList.toggle('rotated');
+        });
+
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadData();
+            populateJobDatalist();
+            updateCurrentJobDisplay();
+            renderEntries();
+        });
+    </script>
+</body>
+</html>
