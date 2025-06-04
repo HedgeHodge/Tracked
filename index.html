@@ -1,21 +1,29 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tracked</title>
-    <!-- Link to Web App Manifest -->
     <link rel="manifest" href="manifest.json">
-    <!-- Theme color for Android browser toolbar -->
     <meta name="theme-color" content="#D2691E">
 
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Lora:wght@400;600&display=swap" rel="stylesheet">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600&family=Lora:wght@400;600&display=swap"
+        rel="stylesheet">
     <style>
         body {
-            font-family: 'Lora', serif; /* Primary body font */
-            background-color: #FDF5E6; /* OldLace - light cream */
-            color: #5A4A42; /* Dark brown/taupe */
+            font-family: 'Lora', serif;
+            /* Primary body font */
+            background-color: #FDF5E6;
+            /* OldLace - light cream */
+            color: #5A4A42;
+            /* Dark brown/taupe */
             display: flex;
             justify-content: center;
             align-items: flex-start;
@@ -23,23 +31,33 @@
             padding: 20px;
             box-sizing: border-box;
         }
+
         .container {
-            background-color: #FFFFFF; /* White for main container */
+            background-color: #FFFFFF;
+            /* White for main container */
             padding: 30px;
-            border-radius: 20px; /* More rounded */
-            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15); /* Stronger shadow */
+            border-radius: 20px;
+            /* More rounded */
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.15);
+            /* Stronger shadow */
             width: 100%;
             max-width: 600px;
             margin-top: 20px;
             margin-bottom: 20px;
         }
-        h1, h2 {
-            font-family: 'Playfair Display', serif; /* Headings font */
-            color: #D2691E; /* Terracotta */
+
+        h1,
+        h2 {
+            font-family: 'Playfair Display', serif;
+            /* Headings font */
+            color: #D2691E;
+            /* Terracotta */
         }
+
         .btn {
             padding: 10px 20px;
-            border-radius: 15px; /* More rounded buttons */
+            border-radius: 15px;
+            /* More rounded buttons */
             font-weight: 600;
             transition: background-color 0.3s ease, transform 0.2s ease;
             cursor: pointer;
@@ -49,67 +67,115 @@
             justify-content: center;
             gap: 8px;
         }
+
         .btn-primary {
-            background-color: #D2691E; /* Terracotta */
+            background-color: #D2691E;
+            /* Terracotta */
             color: white;
         }
+
         .btn-primary:hover {
-            background-color: #B85B18; /* Darker terracotta */
+            background-color: #B85B18;
+            /* Darker terracotta */
             transform: translateY(-2px);
         }
+
         .btn-danger {
-            background-color: #EF4444; /* Keep red for danger */
+            background-color: #EF4444;
+            /* Keep red for danger */
             color: white;
         }
+
         .btn-danger:hover {
             background-color: #DC2626;
             transform: translateY(-2px);
         }
+
         .btn-secondary {
-            background-color: #8B4513; /* SaddleBrown - earthy brown */
+            background-color: #8B4513;
+            /* SaddleBrown - earthy brown */
             color: white;
         }
+
         .btn-secondary:hover {
-            background-color: #7B3A0F; /* Darker brown */
+            background-color: #7B3A0F;
+            /* Darker brown */
             transform: translateY(-2px);
         }
+
         .btn-edit {
-            background-color: #6B8E23; /* OliveDrab - muted green */
+            background-color: #6B8E23;
+            /* OliveDrab - muted green */
             color: white;
         }
+
         .btn-edit:hover {
-            background-color: #5A781B; /* Darker olive */
+            background-color: #5A781B;
+            /* Darker olive */
             transform: translateY(-2px);
         }
+
         .btn-pause {
-            background-color: #F4A460; /* SandyBrown for pause */
+            background-color: #F4A460;
+            /* SandyBrown for pause */
             color: #5A4A42;
         }
+
         .btn-pause:hover {
             background-color: #D28C4B;
             transform: translateY(-2px);
         }
+
         .btn-resume {
-            background-color: #8B4513; /* SaddleBrown for resume */
+            background-color: #8B4513;
+            /* SaddleBrown for resume */
             color: white;
         }
+
         .btn-resume:hover {
             background-color: #7B3A0F;
             transform: translateY(-2px);
         }
+
+        /* Google Sign-In Button style */
+        .google-signin-btn {
+            background-color: #4285F4;
+            /* Google Blue */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .google-signin-btn:hover {
+            background-color: #357ae8;
+        }
+
         .input-field {
             width: 100%;
             padding: 10px 15px;
-            border: 1px solid #D1D5DB; /* Keep light gray border */
-            border-radius: 12px; /* More rounded input fields */
+            border: 1px solid #D1D5DB;
+            /* Keep light gray border */
+            border-radius: 12px;
+            /* More rounded input fields */
             font-size: 1rem;
             outline: none;
             transition: border-color 0.3s ease, box-shadow 0.3s ease;
         }
+
         .input-field:focus {
-            border-color: #D2691E; /* Focus color matches primary */
+            border-color: #D2691E;
+            /* Focus color matches primary */
             box-shadow: 0 0 0 3px rgba(210, 105, 30, 0.2);
         }
+
         .modal {
             display: none;
             position: fixed;
@@ -119,20 +185,24 @@
             width: 100%;
             height: 100%;
             overflow: auto;
-            background-color: rgba(0,0,0,0.4);
+            background-color: rgba(0, 0, 0, 0.4);
             justify-content: center;
             align-items: center;
         }
+
         .modal-content {
-            background-color: #FDF5E6; /* Modal matches body background */
+            background-color: #FDF5E6;
+            /* Modal matches body background */
             margin: auto;
             padding: 25px;
-            border-radius: 20px; /* More rounded modal */
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            border-radius: 20px;
+            /* More rounded modal */
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
             width: 90%;
             max-width: 400px;
             text-align: center;
         }
+
         .close-button {
             color: #aaa;
             float: right;
@@ -140,6 +210,7 @@
             font-weight: bold;
             cursor: pointer;
         }
+
         .close-button:hover,
         .close-button:focus {
             color: #000;
@@ -156,25 +227,33 @@
             padding: 10px 0;
             font-size: 1.25rem;
             font-weight: 600;
-            color: #D2691E; /* Header matches primary */
-            border-bottom: 1px solid #F4A460; /* SandyBrown for separator */
+            color: #D2691E;
+            /* Header matches primary */
+            border-bottom: 1px solid #F4A460;
+            /* SandyBrown for separator */
             margin-bottom: 15px;
         }
+
         .collapsible-header:hover {
             color: #B85B18;
         }
+
         .collapsible-content {
             max-height: 0;
             overflow: hidden;
             transition: max-height 0.3s ease-out;
         }
+
         .collapsible-content.expanded {
-            max-height: 500px; /* Adjust as needed based on content height */
+            max-height: 500px;
+            /* Adjust as needed based on content height */
             transition: max-height 0.5s ease-in;
         }
+
         .collapsible-arrow {
             transition: transform 0.3s ease;
         }
+
         .collapsible-arrow.rotated {
             transform: rotate(90deg);
         }
@@ -185,7 +264,8 @@
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #6B8E23; /* OliveDrab for info messages */
+            background-color: #6B8E23;
+            /* OliveDrab for info messages */
             color: white;
             padding: 12px 20px;
             border-radius: 8px;
@@ -197,6 +277,7 @@
             min-width: 250px;
             text-align: center;
         }
+
         #infoMessageContainer.show {
             opacity: 1;
             visibility: visible;
@@ -204,25 +285,42 @@
 
         /* Adjusting the bg-indigo-50 and bg-purple-50 for sections */
         .bg-indigo-50 {
-            background-color: #F8F0E3; /* Light cream/beige for live tracking section */
+            background-color: #F8F0E3;
+            /* Light cream/beige for live tracking section */
         }
+
         .bg-purple-50 {
-            background-color: #F0E6D2; /* Slightly darker cream/beige for manual entry */
+            background-color: #F0E6D2;
+            /* Slightly darker cream/beige for manual entry */
         }
-        .bg-gray-50 { /* For individual entries */
-            background-color: #FFF8EE; /* Even lighter cream */
+
+        .bg-gray-50 {
+            /* For individual entries */
+            background-color: #FFF8EE;
+            /* Even lighter cream */
         }
-        .text-indigo-800 { /* For job names in entries */
-            color: #D2691E; /* Terracotta */
+
+        .text-indigo-800 {
+            /* For job names in entries */
+            color: #D2691E;
+            /* Terracotta */
         }
-        .text-gray-600 { /* For general text in entries */
-            color: #5A4A42; /* Dark brown/taupe */
+
+        .text-gray-600 {
+            /* For general text in entries */
+            color: #5A4A42;
+            /* Dark brown/taupe */
         }
-        .text-green-600 { /* For elapsed time (if used, will be olive) */
-            color: #6B8E23; /* OliveDrab */
+
+        .text-green-600 {
+            /* For elapsed time (if used, will be olive) */
+            color: #6B8E23;
+            /* OliveDrab */
         }
+
         .border-gray-200 {
-            border-color: #E6D8C2; /* Softer border color */
+            border-color: #E6D8C2;
+            /* Softer border color */
         }
 
         /* Styles for active job list */
@@ -230,14 +328,16 @@
             background-color: #FFF8EE;
             padding: 10px;
             border-radius: 10px;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
             margin-bottom: 10px;
         }
+
         #activeJobsList .active-job-item:last-child {
             margin-bottom: 0;
         }
     </style>
 </head>
+
 <body class="antialiased">
     <div id="infoMessageContainer">
         <p id="infoMessageText"></p>
@@ -246,32 +346,57 @@
     <div class="container">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Tracked</h1>
 
+        <div id="authStatus" class="text-center mb-6 p-4 bg-gray-100 rounded-lg shadow-sm border border-gray-200">
+            <div id="userInfo" class="hidden">
+                <img id="userPhoto" class="rounded-full w-10 h-10 mx-auto mb-2" alt="User Photo">
+                <p class="text-lg font-semibold text-gray-800"><span id="userName"></span></p>
+                <p class="text-sm text-gray-600 mb-4"><span id="userEmail"></span></p>
+                <button id="signOutButton" class="btn btn-secondary text-sm">Sign Out</button>
+            </div>
+            <div id="signInPrompt" class="hidden">
+                <p class="text-gray-700 mb-4">Sign in to save your data to the cloud.</p>
+                <button id="signInButton" class="google-signin-btn">
+                    <svg viewBox="0 0 24 24" width="18" height="18" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M12.24 10.27v2.46h6.76c-.27 1.63-1.25 3.33-3.69 4.7l-1.92 1.62c-1.37 1.15-3.13 1.74-4.83 1.74-4.66 0-8.45-3.79-8.45-8.45s3.79-8.45 8.45-8.45c2.42 0 4.39.84 5.92 2.31l1.88-1.78c-2.3-2.14-5.32-3.48-8.15-3.48-6.9 0-12.5 5.6-12.5 12.5s5.6 12.5 12.5 12.5c4.76 0 8.78-2.6 10.96-7.85 0-.15-.01-.3-.01-.45z"
+                            fill="#fcfcfc" />
+                        <path
+                            d="M11.66 18.25c-.21 0-.42-.01-.63-.02-.85.75-1.91 1.2-3.03 1.2-2.77 0-5.02-2.25-5.02-5.02s2.25-5.02 5.02-5.02c1.23 0 2.37.45 3.25 1.22l-.72.6c-.63-.44-1.44-.7-2.31-.7-1.89 0-3.43 1.54-3.43 3.43s1.54 3.43 3.43 3.43c1.78 0 3.03-.98 3.39-2.35l-3.39-.02z"
+                            fill="#fcfcfc" />
+                    </svg>
+                    Sign in with Google
+                </button>
+            </div>
+        </div>
+
         <div class="mb-6 p-4 bg-indigo-50 rounded-lg shadow-inner">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Tracking</h2>
-            
+
             <label for="jobInput" class="block text-gray-700 text-sm font-semibold mb-2">Job Name:</label>
-            <input type="text" id="jobInput" list="jobDatalist" placeholder="Select or type a job name" class="input-field mb-4">
+            <input type="text" id="jobInput" list="jobDatalist" placeholder="Select or type a job name"
+                class="input-field mb-4">
             <datalist id="jobDatalist">
-                </datalist>
-            
-            <label for="liveStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start Time (Optional - for past time on today's date):</label>
+            </datalist>
+
+            <label for="liveStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start Time (Optional
+                - for past time on today's date):</label>
             <input type="time" id="liveStartTimeInput" class="input-field mb-4">
 
             <div class="flex flex-col sm:flex-row gap-4">
                 <button id="startButton" class="btn btn-primary flex-1">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                        <path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.38 2.872-1.624L19.32 12 7.372 20.971c-1.343.756-2.872-.118-2.872-1.624V5.653Z" clip-rule="evenodd" />
+                        <path fill-rule="evenodd"
+                            d="M4.5 5.653c0-1.426 1.529-2.38 2.872-1.624L19.32 12 7.372 20.971c-1.343.756-2.872-.118-2.872-1.624V5.653Z"
+                            clip-rule="evenodd" />
                     </svg>
                     Start Job
                 </button>
             </div>
         </div>
 
-        <!-- Display for ALL currently active/paused jobs -->
         <div id="activeJobsContainer" class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200 hidden">
             <h2 class="text-xl font-semibold text-gray-800 mb-2">Currently Tracking:</h2>
             <div id="activeJobsList" class="space-y-3">
-                <!-- Active job items will be rendered here -->
                 <p class="text-gray-500 text-center" id="noActiveJobsMessage">No jobs currently active.</p>
             </div>
         </div>
@@ -279,14 +404,18 @@
         <div class="mb-6 p-4 bg-purple-50 rounded-lg shadow-inner">
             <div class="collapsible-header" id="manualEntryHeader">
                 <h2>Manual Entry</h2>
-                <svg id="manualEntryArrow" class="collapsible-arrow w-6 h-6 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <svg id="manualEntryArrow" class="collapsible-arrow w-6 h-6 text-gray-600"
+                    xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                    stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" d="m8.25 4.5 7.5 7.5-7.5 7.5" />
                 </svg>
             </div>
             <div class="collapsible-content" id="manualEntryContent">
                 <label for="manualJobInput" class="block text-gray-700 text-sm font-semibold mb-2">Job Name:</label>
-                <input type="text" id="manualJobInput" list="jobDatalist" placeholder="Select or type a job name" class="input-field mb-4">
-                <label for="manualStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start Time:</label>
+                <input type="text" id="manualJobInput" list="jobDatalist" placeholder="Select or type a job name"
+                    class="input-field mb-4">
+                <label for="manualStartTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">Start
+                    Time:</label>
                 <input type="datetime-local" id="manualStartTimeInput" class="input-field mb-4">
 
                 <label for="manualEndTimeInput" class="block text-gray-700 text-sm font-semibold mb-2">End Time:</label>
@@ -295,13 +424,17 @@
                 <div class="flex flex-col sm:flex-row gap-4">
                     <button id="addManualEntryButton" class="btn btn-primary flex-1">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                            <path fill-rule="evenodd" d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd"
+                                d="M12 3.75a.75.75 0 0 1 .75.75v6.75h6.75a.75.75 0 0 1 0 1.5h-6.75v6.75a.75.75 0 0 1-1.5 0v-6.75H4.5a.75.75 0 0 1 0-1.5h6.75V4.5a.75.75 0 0 1 .75-.75Z"
+                                clip-rule="evenodd" />
                         </svg>
                         Add Manual Entry
                     </button>
                     <button id="cancelEditButton" class="btn btn-secondary flex-1 hidden">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                            <path fill-rule="evenodd" d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                            <path fill-rule="evenodd"
+                                d="M5.47 5.47a.75.75 0 0 1 1.06 0L12 10.94l5.47-5.47a.75.75 0 1 1 1.06 1.06L13.06 12l5.47 5.47a.75.75 0 1 1-1.06 1.06L12 13.06l-5.47 5.47a.75.75 0 0 1-1.06-1.06L10.94 12 5.47 6.53a.75.75 0 0 1 0-1.06Z"
+                                clip-rule="evenodd" />
                         </svg>
                         Cancel Edit
                     </button>
@@ -345,15 +478,43 @@
             });
         }
 
+        // --- Firebase Configuration ---
+        // !!! IMPORTANT !!!
+        // Paste your Firebase config object here. You get this from your Firebase project settings.
+        // It looks something like:
+        const firebaseConfig = {
+            apiKey: "AIzaSyAQTywjpYPftC952r3P1Wq6nynIVlo8gdM",
+            authDomain: "tracked-6f89f.firebaseapp.com",
+            projectId: "tracked-6f89f",
+            storageBucket: "tracked-6f89f.firebasestorage.app",
+            messagingSenderId: "1077597117578",
+            appId: "1:1077597117578:web:d6ee573127ef42c7c56173",
+            measurementId: "G-RYT4P1HCJW"
+        };
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        let currentUser = null; // Stores Firebase User object when logged in
+
+        // DOM Elements - Authentication
+        const authStatus = document.getElementById('authStatus');
+        const userInfo = document.getElementById('userInfo');
+        const userPhoto = document.getElementById('userPhoto');
+        const userName = document.getElementById('userName');
+        const userEmail = document.getElementById('userEmail');
+        const signOutButton = document.getElementById('signOutButton');
+        const signInPrompt = document.getElementById('signInPrompt');
+        const signInButton = document.getElementById('signInButton');
+
         // DOM Elements - Live Tracking
         const jobInput = document.getElementById('jobInput');
         const jobDatalist = document.getElementById('jobDatalist');
         const liveStartTimeInput = document.getElementById('liveStartTimeInput');
         const startButton = document.getElementById('startButton');
-        // Removed stopButton from top level
-        const activeJobsContainer = document.getElementById('activeJobsContainer'); // New container for active jobs
-        const activeJobsList = document.getElementById('activeJobsList'); // List within the container
-        const noActiveJobsMessage = document.getElementById('noActiveJobsMessage'); // Message for no active jobs
+        const activeJobsContainer = document.getElementById('activeJobsContainer');
+        const activeJobsList = document.getElementById('activeJobsList');
+        const noActiveJobsMessage = document.getElementById('noActiveJobsMessage');
 
         // DOM Elements - Manual Entry
         const manualEntryHeader = document.getElementById('manualEntryHeader');
@@ -375,10 +536,8 @@
         const closeModalButton = document.getElementById('closeModalButton');
         const modalOkButton = document.getElementById('modalOkButton');
         const modalCancelButton = document.getElementById('modalCancelButton');
-        const getModalButtons = () => document.getElementById('modalButtons'); 
+        const getModalButtons = () => document.getElementById('modalButtons');
 
-
-        // New DOM elements for temporary info message
         const infoMessageContainer = document.getElementById('infoMessageContainer');
         const infoMessageText = document.getElementById('infoMessageText');
 
@@ -386,11 +545,10 @@
         // Global state
         let data = {
             availableJobs: [],
-            // liveTracking now an object mapping jobName to its state
-            liveTracking: {}, // { [jobName]: { currentSegmentStart: string, totalActiveDuration: number, isPaused: boolean } }
-            entries: [] 
+            liveTracking: {},
+            entries: []
         };
-        let activeTimerInterval = null; // This will now update all active jobs
+        let activeTimerInterval = null;
         let confirmCallback = null;
         let infoMessageTimeout = null;
         let editingEntryId = null;
@@ -407,7 +565,7 @@
             if (type === 'info') {
                 infoMessageText.textContent = message;
                 infoMessageContainer.classList.add('show');
-                
+
                 clearTimeout(infoMessageTimeout);
                 infoMessageTimeout = setTimeout(() => {
                     infoMessageContainer.classList.remove('show');
@@ -419,7 +577,7 @@
 
                 const currentModalButtons = getModalButtons();
                 if (currentModalButtons) {
-                    currentModalButtons.classList.remove('hidden'); 
+                    currentModalButtons.classList.remove('hidden');
                 }
 
                 confirmCallback = callback;
@@ -435,7 +593,7 @@
             confirmCallback = null;
             const currentModalButtons = getModalButtons();
             if (currentModalButtons) {
-                currentModalButtons.classList.remove('hidden'); 
+                currentModalButtons.classList.remove('hidden');
             }
             console.log('Modal hidden successfully (display: none).');
         }
@@ -447,33 +605,81 @@
             return `${h}:${m}:${s}`;
         }
 
-        // --- Data Persistence (localStorage) ---
+        // --- Data Persistence (localStorage / Firestore) ---
 
-        function loadData() {
-            const storedData = localStorage.getItem('timeTrackerData');
-            if (storedData) {
-                const parsedData = JSON.parse(storedData);
-                data.availableJobs = parsedData.availableJobs || [];
-                data.entries = (parsedData.entries || []).map(entry => ({
-                    ...entry,
-                    id: entry.id || generateUniqueId() 
-                }));
-                // Restore live tracking state, converting dates back
-                if (parsedData.liveTracking) {
-                    for (const jobName in parsedData.liveTracking) {
-                        const jobState = parsedData.liveTracking[jobName];
-                        data.liveTracking[jobName] = {
-                            currentSegmentStart: new Date(jobState.currentSegmentStart),
-                            totalActiveDuration: jobState.totalActiveDuration,
-                            isPaused: jobState.isPaused
-                        };
+        async function loadData() {
+            if (currentUser) {
+                // Load from Firestore
+                console.log("Loading data from Firestore...");
+                const userDocRef = db.collection('users').doc(currentUser.uid);
+                const doc = await userDocRef.get();
+
+                if (doc.exists) {
+                    const cloudData = doc.data();
+                    data.availableJobs = cloudData.availableJobs || [];
+                    data.entries = (cloudData.entries || []).map(entry => ({
+                        ...entry,
+                        id: entry.id || generateUniqueId()
+                    }));
+                    // Restore liveTracking state from Firestore
+                    if (cloudData.liveTracking) {
+                        data.liveTracking = {}; // Clear existing live tracking
+                        for (const jobName in cloudData.liveTracking) {
+                            const jobState = cloudData.liveTracking[jobName];
+                            data.liveTracking[jobName] = {
+                                currentSegmentStart: new Date(jobState.currentSegmentStart),
+                                totalActiveDuration: jobState.totalActiveDuration,
+                                isPaused: jobState.isPaused
+                            };
+                        }
+                    } else {
+                        data.liveTracking = {};
                     }
+                    showMessage("Data loaded from cloud.", 'info');
+                } else {
+                    console.log("No cloud data found for this user. Starting fresh in cloud.");
+                    data = { availableJobs: [], liveTracking: {}, entries: [] }; // Start fresh in cloud
+                    await saveData(); // Create the document in Firestore
+                    showMessage("No existing cloud data found. Starting fresh.", 'info');
+                }
+            } else {
+                // Load from localStorage if not logged in
+                console.log("Loading data from localStorage (not signed in)...");
+                const storedData = localStorage.getItem('timeTrackerData');
+                if (storedData) {
+                    const parsedData = JSON.parse(storedData);
+                    data.availableJobs = parsedData.availableJobs || [];
+                    data.entries = (parsedData.entries || []).map(entry => ({
+                        ...entry,
+                        id: entry.id || generateUniqueId()
+                    }));
+                    // Restore liveTracking state from localStorage
+                    if (parsedData.liveTracking) {
+                        data.liveTracking = {};
+                        for (const jobName in parsedData.liveTracking) {
+                            const jobState = parsedData.liveTracking[jobName];
+                            data.liveTracking[jobName] = {
+                                currentSegmentStart: new Date(jobState.currentSegmentStart),
+                                totalActiveDuration: jobState.totalActiveDuration,
+                                isPaused: jobState.isPaused
+                            };
+                        }
+                    } else {
+                        data.liveTracking = {};
+                    }
+                    showMessage("Data loaded from browser.", 'info');
+                } else {
+                    data = { availableJobs: [], liveTracking: {}, entries: [] }; // Start fresh locally
+                    console.log("No local data found. Starting fresh locally.");
                 }
             }
             console.log('Data loaded:', data);
+            populateJobDatalist();
+            updateActiveJobsDisplay();
+            renderEntries();
         }
 
-        function saveData() {
+        async function saveData() {
             // Convert Date objects in liveTracking to ISO strings for saving
             const serializableLiveTracking = {};
             for (const jobName in data.liveTracking) {
@@ -484,11 +690,28 @@
                     isPaused: jobState.isPaused
                 };
             }
-            localStorage.setItem('timeTrackerData', JSON.stringify({
+
+            const dataToSave = {
                 availableJobs: data.availableJobs,
                 liveTracking: serializableLiveTracking,
                 entries: data.entries
-            }));
+            };
+
+            if (currentUser) {
+                // Save to Firestore
+                console.log("Saving data to Firestore...");
+                try {
+                    await db.collection('users').doc(currentUser.uid).set(dataToSave);
+                    console.log('Data saved to cloud.');
+                } catch (error) {
+                    console.error("Error saving to Firestore:", error);
+                    showMessage("Error saving data to cloud. Please check console.", 'info');
+                }
+            } else {
+                // Save to localStorage
+                localStorage.setItem('timeTrackerData', JSON.stringify(dataToSave));
+                console.log('Data saved to localStorage.');
+            }
             console.log('Data saved:', data);
         }
 
@@ -501,11 +724,21 @@
                 option.value = job;
                 jobDatalist.appendChild(option);
             });
+            // Also update the datalist for manual entry (it uses the same ID)
+            const manualJobDatalist = document.getElementById('jobDatalist'); // Re-get for safety, though it's the same element
+            if (manualJobDatalist) { // Check if it exists for manual entry
+                manualJobDatalist.innerHTML = '';
+                data.availableJobs.forEach(job => {
+                    const option = document.createElement('option');
+                    option.value = job;
+                    manualJobDatalist.appendChild(option);
+                });
+            }
             console.log('Job datalist populated.');
         }
 
         function updateActiveJobsDisplay() {
-            activeJobsList.innerHTML = ''; // Clear existing active jobs
+            activeJobsList.innerHTML = '';
             const activeJobNames = Object.keys(data.liveTracking);
 
             if (activeJobNames.length === 0) {
@@ -557,7 +790,6 @@
                 activeJobsList.appendChild(jobItemDiv);
             });
 
-            // Re-attach event listeners for dynamically created buttons
             activeJobsList.querySelectorAll('button[data-action="toggle-pause-resume"]').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const jobName = event.currentTarget.dataset.jobName;
@@ -572,7 +804,6 @@
                 });
             });
 
-            // Start/restart the global interval only if there are active jobs
             clearInterval(activeTimerInterval);
             if (activeJobNames.length > 0) {
                 activeTimerInterval = setInterval(updateActiveJobsDisplay, 1000);
@@ -619,7 +850,6 @@
                 entriesList.appendChild(entryDiv);
             });
 
-            // Add event listeners for new Edit/Delete buttons
             entriesList.querySelectorAll('.btn-edit').forEach(button => {
                 button.addEventListener('click', (event) => {
                     const id = event.target.dataset.id;
@@ -647,7 +877,7 @@
             if (!data.availableJobs.includes(jobName)) {
                 data.availableJobs.push(jobName);
                 data.availableJobs.sort();
-                saveData();
+                saveData(); // Save immediately after adding a new job
                 populateJobDatalist();
                 console.log(`Added new job to available list: ${jobName}`);
             }
@@ -676,7 +906,7 @@
                 return;
             }
 
-            ensureJobExists(selectedJob);
+            ensureJobExists(selectedJob); // Ensure job is in available list
 
             if (data.liveTracking[selectedJob]) {
                 // Job is already being tracked
@@ -699,7 +929,7 @@
                 showMessage(`Started tracking time for: "${selectedJob}"`, 'info');
             }
             saveData();
-            updateActiveJobsDisplay(); // Update display for all active jobs
+            updateActiveJobsDisplay();
             console.log(`Started/Resumed job: ${selectedJob}`);
         }
 
@@ -741,12 +971,10 @@
                     data.entries.push({
                         id: generateUniqueId(),
                         job_name: jobName,
-                        // For simplicity, we'll use the current time as end and the start of the *session* as start
-                        // A more complex system would store segments within the entry.
-                        // For now, totalActiveDuration represents the accumulated time.
-                        start_time: jobState.currentSegmentStart.toISOString(), // This is the start of the last segment, not the whole session
-                        end_time: new Date().toISOString(), // This is the current time
-                        duration_seconds: jobState.totalActiveDuration // This is the total active time
+                        // Using current time as end time for the entry, totalActiveDuration as the duration
+                        start_time: new Date().toISOString(), // Use current time as 'start' for the entry itself (simpler)
+                        end_time: new Date().toISOString(),
+                        duration_seconds: jobState.totalActiveDuration
                     });
 
                     delete data.liveTracking[jobName]; // Remove from active tracking
@@ -835,7 +1063,7 @@
                 manualJobInput.value = entryToEdit.job_name;
                 manualStartTimeInput.value = new Date(entryToEdit.start_time).toISOString().slice(0, 16);
                 manualEndTimeInput.value = new Date(entryToEdit.end_time).toISOString().slice(0, 16);
-                
+
                 addManualEntryButton.textContent = 'Update Entry';
                 addManualEntryButton.classList.remove('btn-primary');
                 addManualEntryButton.classList.add('btn-edit');
@@ -897,7 +1125,7 @@
                     data.liveTracking = {}; // Clear all live tracking
                     saveData();
                     populateJobDatalist();
-                    updateActiveJobsDisplay(); // Update display for all active jobs
+                    updateActiveJobsDisplay();
                     renderEntries();
                     showMessage("All data has been cleared.", 'info');
                     console.log('All data cleared.');
@@ -905,13 +1133,67 @@
             );
         }
 
+        // --- Authentication Functions ---
+
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    console.log('Signed in with Google:', result.user.displayName);
+                    // Auth state change listener will handle UI update and data load
+                })
+                .catch((error) => {
+                    console.error('Google Sign-In Error:', error);
+                    showMessage(`Sign-in failed: ${error.message}`, 'info');
+                });
+        }
+
+        function signOutGoogle() {
+            auth.signOut()
+                .then(() => {
+                    console.log('Signed out.');
+                    showMessage('Signed out.', 'info');
+                    // Auth state change listener will handle UI update and data reset
+                })
+                .catch((error) => {
+                    console.error('Sign-out Error:', error);
+                    showMessage(`Sign-out failed: ${error.message}`, 'info');
+                });
+        }
+
+        // --- Firebase Auth State Change Listener ---
+        auth.onAuthStateChanged(async (user) => {
+            currentUser = user;
+            if (user) {
+                // User is signed in.
+                userInfo.classList.remove('hidden');
+                signInPrompt.classList.add('hidden');
+                userPhoto.src = user.photoURL || 'https://via.placeholder.com/40x40.png?text=:)'; // Default photo
+                userName.textContent = user.displayName || 'Anonymous';
+                userEmail.textContent = user.email;
+                showMessage(`Welcome, ${user.displayName || user.email}! Loading your data...`, 'info');
+            } else {
+                // User is signed out.
+                userInfo.classList.add('hidden');
+                signInPrompt.classList.remove('hidden');
+                data = { availableJobs: [], liveTracking: {}, entries: [] }; // Reset local data
+                localStorage.removeItem('timeTrackerData'); // Clear local storage too
+                showMessage('Signed out. Your data will not be saved to the cloud.', 'info');
+            }
+            await loadData(); // Load data based on auth state
+        });
+
+
         // --- Event Listeners ---
 
         startButton.addEventListener('click', startJob);
-        // stopButton is now dynamic within activeJobsList
         addManualEntryButton.addEventListener('click', addManualEntry);
         cancelEditButton.addEventListener('click', resetManualEntryForm);
         clearAllButton.addEventListener('click', clearAllEntries);
+
+        // Auth listeners
+        signInButton.addEventListener('click', signInWithGoogle);
+        signOutButton.addEventListener('click', signOutGoogle);
 
         closeModalButton.addEventListener('click', () => {
             console.log('Close button clicked.');
@@ -944,12 +1226,15 @@
 
 
         // --- Initial Load ---
+        // loadData is now called by auth.onAuthStateChanged
         document.addEventListener('DOMContentLoaded', () => {
-            loadData();
+            // No need to call loadData() here, as auth.onAuthStateChanged will handle it.
+            // But populate datalist and initial display should still run.
             populateJobDatalist();
-            updateActiveJobsDisplay(); // Initial render of active jobs
+            updateActiveJobsDisplay();
             renderEntries();
         });
     </script>
 </body>
+
 </html>
