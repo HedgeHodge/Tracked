@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JobTrack Time Tracker</title>
+    <title>Tracked</title>
     <!-- Link to Web App Manifest -->
     <link rel="manifest" href="manifest.json">
     <!-- Theme color for Android browser toolbar -->
@@ -81,7 +81,22 @@
             background-color: #5A781B; /* Darker olive */
             transform: translateY(-2px);
         }
-        /* Removed .btn-ai styling as it's not used anymore */
+        .btn-pause {
+            background-color: #F4A460; /* SandyBrown for pause */
+            color: #5A4A42;
+        }
+        .btn-pause:hover {
+            background-color: #D28C4B;
+            transform: translateY(-2px);
+        }
+        .btn-resume {
+            background-color: #8B4513; /* SaddleBrown for resume */
+            color: white;
+        }
+        .btn-resume:hover {
+            background-color: #7B3A0F;
+            transform: translateY(-2px);
+        }
         .input-field {
             width: 100%;
             padding: 10px 15px;
@@ -131,7 +146,6 @@
             text-decoration: none;
             cursor: pointer;
         }
-        /* Removed .loading-spinner and @keyframes spin */
 
         /* Collapsible Section Styles */
         .collapsible-header {
@@ -210,6 +224,18 @@
         .border-gray-200 {
             border-color: #E6D8C2; /* Softer border color */
         }
+
+        /* Styles for active job list */
+        #activeJobsList .active-job-item {
+            background-color: #FFF8EE;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+            margin-bottom: 10px;
+        }
+        #activeJobsList .active-job-item:last-child {
+            margin-bottom: 0;
+        }
     </style>
 </head>
 <body class="antialiased">
@@ -218,7 +244,7 @@
     </div>
 
     <div class="container">
-        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">JobTrack Time Tracker</h1>
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Tracked</h1>
 
         <div class="mb-6 p-4 bg-indigo-50 rounded-lg shadow-inner">
             <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Tracking</h2>
@@ -238,19 +264,16 @@
                     </svg>
                     Start Job
                 </button>
-                <button id="stopButton" class="btn btn-danger flex-1" disabled>
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
-                        <path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" />
-                    </svg>
-                    Stop Job
-                </button>
             </div>
         </div>
 
-        <div id="currentJobDisplay" class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200 hidden">
+        <!-- Display for ALL currently active/paused jobs -->
+        <div id="activeJobsContainer" class="mb-6 p-4 bg-white rounded-lg shadow-md border border-gray-200 hidden">
             <h2 class="text-xl font-semibold text-gray-800 mb-2">Currently Tracking:</h2>
-            <p class="text-lg text-gray-600">Job: <span id="currentJobName" class="font-medium text-indigo-700"></span></p>
-            <p class="text-lg text-gray-600">Elapsed: <span id="currentJobElapsedTime" class="font-medium text-green-600">00:00:00</span></p>
+            <div id="activeJobsList" class="space-y-3">
+                <!-- Active job items will be rendered here -->
+                <p class="text-gray-500 text-center" id="noActiveJobsMessage">No jobs currently active.</p>
+            </div>
         </div>
 
         <div class="mb-6 p-4 bg-purple-50 rounded-lg shadow-inner">
@@ -327,10 +350,10 @@
         const jobDatalist = document.getElementById('jobDatalist');
         const liveStartTimeInput = document.getElementById('liveStartTimeInput');
         const startButton = document.getElementById('startButton');
-        const stopButton = document.getElementById('stopButton');
-        const currentJobDisplay = document.getElementById('currentJobDisplay');
-        const currentJobName = document.getElementById('currentJobName');
-        const currentJobElapsedTime = document.getElementById('currentJobElapsedTime');
+        // Removed stopButton from top level
+        const activeJobsContainer = document.getElementById('activeJobsContainer'); // New container for active jobs
+        const activeJobsList = document.getElementById('activeJobsList'); // List within the container
+        const noActiveJobsMessage = document.getElementById('noActiveJobsMessage'); // Message for no active jobs
 
         // DOM Elements - Manual Entry
         const manualEntryHeader = document.getElementById('manualEntryHeader');
@@ -363,11 +386,11 @@
         // Global state
         let data = {
             availableJobs: [],
-            activeJobName: null,
-            activeJobStartTime: null,
+            // liveTracking now an object mapping jobName to its state
+            liveTracking: {}, // { [jobName]: { currentSegmentStart: string, totalActiveDuration: number, isPaused: boolean } }
             entries: [] 
         };
-        let activeTimerInterval = null;
+        let activeTimerInterval = null; // This will now update all active jobs
         let confirmCallback = null;
         let infoMessageTimeout = null;
         let editingEntryId = null;
@@ -435,16 +458,37 @@
                     ...entry,
                     id: entry.id || generateUniqueId() 
                 }));
-                if (parsedData.activeJobName && parsedData.activeJobStartTime) {
-                    data.activeJobName = parsedData.activeJobName;
-                    data.activeJobStartTime = new Date(parsedData.activeJobStartTime);
+                // Restore live tracking state, converting dates back
+                if (parsedData.liveTracking) {
+                    for (const jobName in parsedData.liveTracking) {
+                        const jobState = parsedData.liveTracking[jobName];
+                        data.liveTracking[jobName] = {
+                            currentSegmentStart: new Date(jobState.currentSegmentStart),
+                            totalActiveDuration: jobState.totalActiveDuration,
+                            isPaused: jobState.isPaused
+                        };
+                    }
                 }
             }
             console.log('Data loaded:', data);
         }
 
         function saveData() {
-            localStorage.setItem('timeTrackerData', JSON.stringify(data));
+            // Convert Date objects in liveTracking to ISO strings for saving
+            const serializableLiveTracking = {};
+            for (const jobName in data.liveTracking) {
+                const jobState = data.liveTracking[jobName];
+                serializableLiveTracking[jobName] = {
+                    currentSegmentStart: jobState.currentSegmentStart.toISOString(),
+                    totalActiveDuration: jobState.totalActiveDuration,
+                    isPaused: jobState.isPaused
+                };
+            }
+            localStorage.setItem('timeTrackerData', JSON.stringify({
+                availableJobs: data.availableJobs,
+                liveTracking: serializableLiveTracking,
+                entries: data.entries
+            }));
             console.log('Data saved:', data);
         }
 
@@ -460,35 +504,82 @@
             console.log('Job datalist populated.');
         }
 
-        function updateCurrentJobDisplay() {
-            if (data.activeJobName && data.activeJobStartTime) {
-                currentJobDisplay.classList.remove('hidden');
-                currentJobName.textContent = data.activeJobName;
-                startButton.disabled = true;
-                stopButton.disabled = false;
-                jobInput.disabled = true;
-                liveStartTimeInput.disabled = true;
+        function updateActiveJobsDisplay() {
+            activeJobsList.innerHTML = ''; // Clear existing active jobs
+            const activeJobNames = Object.keys(data.liveTracking);
 
-                clearInterval(activeTimerInterval);
-                activeTimerInterval = setInterval(() => {
-                    const elapsedSeconds = (new Date() - data.activeJobStartTime) / 1000;
-                    currentJobElapsedTime.textContent = formatDuration(elapsedSeconds);
-                }, 1000);
-                console.log('Current job display updated: Active.');
+            if (activeJobNames.length === 0) {
+                activeJobsContainer.classList.add('hidden');
+                return;
             } else {
-                currentJobDisplay.classList.add('hidden');
-                currentJobName.textContent = '';
-                currentJobElapsedTime.textContent = '00:00:00';
-                startButton.disabled = false;
-                stopButton.disabled = true;
-                jobInput.disabled = false;
-                jobInput.value = '';
-                liveStartTimeInput.value = '';
-                liveStartTimeInput.disabled = false;
-                clearInterval(activeTimerInterval);
-                console.log('Current job display updated: Inactive.');
+                activeJobsContainer.classList.remove('hidden');
             }
+
+            activeJobNames.forEach(jobName => {
+                const jobState = data.liveTracking[jobName];
+                const jobItemDiv = document.createElement('div');
+                jobItemDiv.classList.add('active-job-item', 'flex', 'flex-col', 'sm:flex-row', 'justify-between', 'items-start', 'sm:items-center', 'gap-2');
+
+                let currentDuration = jobState.totalActiveDuration;
+                let statusText = 'Paused';
+                let statusColor = 'text-orange-600'; // For paused state
+                let pauseResumeButtonText = 'Resume';
+                let pauseResumeButtonClass = 'btn-resume';
+                let pauseResumeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M4.5 5.653c0-1.426 1.529-2.38 2.872-1.624L19.32 12 7.372 20.971c-1.343.756-2.872-.118-2.872-1.624V5.653Z" clip-rule="evenodd" /></svg>`;
+
+
+                if (!jobState.isPaused) {
+                    const elapsedSinceStart = (new Date() - jobState.currentSegmentStart) / 1000;
+                    currentDuration += elapsedSinceStart;
+                    statusText = 'Running';
+                    statusColor = 'text-green-600'; // For running state
+                    pauseResumeButtonText = 'Pause';
+                    pauseResumeButtonClass = 'btn-pause';
+                    pauseResumeIcon = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>`;
+                }
+
+                jobItemDiv.innerHTML = `
+                    <div class="flex-1 w-full">
+                        <p class="font-semibold text-lg text-indigo-800">${jobName}</p>
+                        <p class="text-sm ${statusColor}">${statusText} - Total: ${formatDuration(currentDuration)}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                        <button class="btn ${pauseResumeButtonClass} px-3 py-1 text-sm" data-job-name="${jobName}" data-action="toggle-pause-resume">
+                            ${pauseResumeIcon}
+                            ${pauseResumeButtonText}
+                        </button>
+                        <button class="btn btn-danger px-3 py-1 text-sm" data-job-name="${jobName}" data-action="stop">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4"><path fill-rule="evenodd" d="M6.75 5.25a.75.75 0 0 1 .75-.75h9a.75.75 0 0 1 .75.75v13.5a.75.75 0 0 1-.75.75h-9a.75.75 0 0 1-.75-.75V5.25Z" clip-rule="evenodd" /></svg>
+                            Stop
+                        </button>
+                    </div>
+                `;
+                activeJobsList.appendChild(jobItemDiv);
+            });
+
+            // Re-attach event listeners for dynamically created buttons
+            activeJobsList.querySelectorAll('button[data-action="toggle-pause-resume"]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const jobName = event.currentTarget.dataset.jobName;
+                    togglePauseResume(jobName);
+                });
+            });
+
+            activeJobsList.querySelectorAll('button[data-action="stop"]').forEach(button => {
+                button.addEventListener('click', (event) => {
+                    const jobName = event.currentTarget.dataset.jobName;
+                    stopJob(jobName);
+                });
+            });
+
+            // Start/restart the global interval only if there are active jobs
+            clearInterval(activeTimerInterval);
+            if (activeJobNames.length > 0) {
+                activeTimerInterval = setInterval(updateActiveJobsDisplay, 1000);
+            }
+            console.log('Active jobs display updated.');
         }
+
 
         function renderEntries() {
             entriesList.innerHTML = '';
@@ -571,13 +662,6 @@
                 return;
             }
 
-            if (data.activeJobName) {
-                showMessage(`Job "${data.activeJobName}" is already running. Please stop it before starting a new one.`, 'info');
-                return;
-            }
-
-            ensureJobExists(selectedJob);
-
             let chosenStartTime;
             if (liveStartInputVal) {
                 const now = new Date();
@@ -592,40 +676,88 @@
                 return;
             }
 
-            data.activeJobName = selectedJob;
-            data.activeJobStartTime = chosenStartTime;
+            ensureJobExists(selectedJob);
+
+            if (data.liveTracking[selectedJob]) {
+                // Job is already being tracked
+                if (data.liveTracking[selectedJob].isPaused) {
+                    // Resume the job
+                    data.liveTracking[selectedJob].isPaused = false;
+                    data.liveTracking[selectedJob].currentSegmentStart = new Date(); // Start new segment from now
+                    showMessage(`Resumed tracking for: "${selectedJob}"`, 'info');
+                } else {
+                    // Job is already running, do nothing
+                    showMessage(`Job "${selectedJob}" is already running.`, 'info');
+                }
+            } else {
+                // Start a new job tracking session
+                data.liveTracking[selectedJob] = {
+                    currentSegmentStart: chosenStartTime,
+                    totalActiveDuration: 0,
+                    isPaused: false
+                };
+                showMessage(`Started tracking time for: "${selectedJob}"`, 'info');
+            }
             saveData();
-            updateCurrentJobDisplay();
-            showMessage(`Started tracking time for: "${data.activeJobName}"`, 'info');
-            console.log(`Started job: ${data.activeJobName} at ${data.activeJobStartTime.toISOString()}`);
+            updateActiveJobsDisplay(); // Update display for all active jobs
+            console.log(`Started/Resumed job: ${selectedJob}`);
         }
 
-        function stopJob() {
-            if (!data.activeJobName || !data.activeJobStartTime) {
-                showMessage("No job is currently running.", 'info');
-                return;
+        function togglePauseResume(jobName) {
+            const jobState = data.liveTracking[jobName];
+            if (!jobState) return;
+
+            if (jobState.isPaused) {
+                // Resume
+                jobState.isPaused = false;
+                jobState.currentSegmentStart = new Date(); // Start new segment from now
+                showMessage(`Resumed tracking for: "${jobName}"`, 'info');
+            } else {
+                // Pause
+                const activeDuration = (new Date() - jobState.currentSegmentStart) / 1000;
+                jobState.totalActiveDuration += activeDuration;
+                jobState.isPaused = true;
+                showMessage(`Paused tracking for: "${jobName}"`, 'info');
             }
-
-            const endTime = new Date();
-            const durationSeconds = (endTime - data.activeJobStartTime) / 1000;
-
-            data.entries.push({
-                id: generateUniqueId(),
-                job_name: data.activeJobName,
-                start_time: data.activeJobStartTime.toISOString(),
-                end_time: endTime.toISOString(),
-                duration_seconds: durationSeconds
-            });
-
-            const stoppedJobName = data.activeJobName;
-            data.activeJobName = null;
-            data.activeJobStartTime = null;
-
             saveData();
-            updateCurrentJobDisplay();
-            renderEntries();
-            showMessage(`Stopped tracking "${stoppedJobName}". Duration: ${formatDuration(durationSeconds)}`, 'info');
-            console.log(`Stopped job. Duration: ${durationSeconds}s`);
+            updateActiveJobsDisplay();
+            console.log(`Toggled pause/resume for: ${jobName}`);
+        }
+
+        function stopJob(jobName) {
+            const jobState = data.liveTracking[jobName];
+            if (!jobState) return;
+
+            showMessage(
+                `Are you sure you want to stop tracking "${jobName}"? This will finalize its current session.`,
+                'confirm',
+                () => {
+                    if (!jobState.isPaused) {
+                        // If not paused, finalize the current segment
+                        const activeDuration = (new Date() - jobState.currentSegmentStart) / 1000;
+                        jobState.totalActiveDuration += activeDuration;
+                    }
+
+                    data.entries.push({
+                        id: generateUniqueId(),
+                        job_name: jobName,
+                        // For simplicity, we'll use the current time as end and the start of the *session* as start
+                        // A more complex system would store segments within the entry.
+                        // For now, totalActiveDuration represents the accumulated time.
+                        start_time: jobState.currentSegmentStart.toISOString(), // This is the start of the last segment, not the whole session
+                        end_time: new Date().toISOString(), // This is the current time
+                        duration_seconds: jobState.totalActiveDuration // This is the total active time
+                    });
+
+                    delete data.liveTracking[jobName]; // Remove from active tracking
+
+                    saveData();
+                    updateActiveJobsDisplay();
+                    renderEntries();
+                    showMessage(`Stopped tracking "${jobName}". Total Duration: ${formatDuration(jobState.totalActiveDuration)}`, 'info');
+                    console.log(`Stopped job: ${jobName}. Total duration: ${jobState.totalActiveDuration}s`);
+                }
+            );
         }
 
         function addManualEntry() {
@@ -751,7 +883,7 @@
 
 
         function clearAllEntries() {
-            if (data.entries.length === 0 && !data.activeJobName && data.availableJobs.length === 0) {
+            if (Object.keys(data.liveTracking).length === 0 && data.entries.length === 0 && data.availableJobs.length === 0) {
                 showMessage("There are no entries or active jobs to clear.", 'info');
                 return;
             }
@@ -762,11 +894,10 @@
                 () => {
                     data.entries = [];
                     data.availableJobs = [];
-                    data.activeJobName = null;
-                    data.activeJobStartTime = null;
+                    data.liveTracking = {}; // Clear all live tracking
                     saveData();
                     populateJobDatalist();
-                    updateCurrentJobDisplay();
+                    updateActiveJobsDisplay(); // Update display for all active jobs
                     renderEntries();
                     showMessage("All data has been cleared.", 'info');
                     console.log('All data cleared.');
@@ -777,7 +908,7 @@
         // --- Event Listeners ---
 
         startButton.addEventListener('click', startJob);
-        stopButton.addEventListener('click', stopJob);
+        // stopButton is now dynamic within activeJobsList
         addManualEntryButton.addEventListener('click', addManualEntry);
         cancelEditButton.addEventListener('click', resetManualEntryForm);
         clearAllButton.addEventListener('click', clearAllEntries);
@@ -816,7 +947,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadData();
             populateJobDatalist();
-            updateCurrentJobDisplay();
+            updateActiveJobsDisplay(); // Initial render of active jobs
             renderEntries();
         });
     </script>
